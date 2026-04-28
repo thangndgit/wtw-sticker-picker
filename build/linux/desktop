@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Name=My Product
+Comment=A wtw-sticker-picker application
+# The Exec line includes %u to pass the URL to the application
+Exec=/usr/local/bin/wtw-sticker-picker %u
+Terminal=false
+Type=Application
+Icon=wtw-sticker-picker
+Categories=Utility;
+StartupWMClass=wtw-sticker-picker
+
+ 
