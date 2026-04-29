@@ -2,9 +2,7 @@ package main
 
 import (
 	"embed"
-	_ "embed"
 	"log"
-	"time"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -17,26 +15,11 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
-func init() {
-	// Register a custom event whose associated data type is string.
-	// This is not required, but the binding generator will pick up registered events
-	// and provide a strongly typed JS/TS API for them.
-	application.RegisterEvent[string]("time")
-}
-
-// main function serves as the application's entry point. It initializes the application, creates a window,
-// and starts a goroutine that emits a time-based event every second. It subsequently runs the application and
-// logs any error that might occur.
 func main() {
-
-	// Create a new Wails application by providing the necessary options.
-	// Variables 'Name' and 'Description' are for application metadata.
-	// 'Assets' configures the asset server with the 'FS' variable pointing to the frontend files.
-	// 'Bind' is a list of Go struct instances. The frontend has access to the methods of these instances.
-	// 'Mac' options tailor the application when running an macOS.
-	app := application.New(application.Options{
+	var app *application.App
+	app = application.New(application.Options{
 		Name:        "wtw-sticker-picker",
-		Description: "A demo of using raw HTML & CSS",
+		Description: "Sticker picker popup utility",
 		Services: []application.Service{
 			application.NewService(&GreetService{}),
 		},
@@ -44,40 +27,52 @@ func main() {
 			Handler: application.AssetFileServerFS(assets),
 		},
 		Mac: application.MacOptions{
-			ApplicationShouldTerminateAfterLastWindowClosed: true,
+			ActivationPolicy: application.ActivationPolicyAccessory,
+			ApplicationShouldTerminateAfterLastWindowClosed: false,
+		},
+		KeyBindings: map[string]func(window application.Window){
+			"Cmd+Option+Shift+M": func(_ application.Window) {
+				showPopupNearCursor(app, popupWindowName)
+			},
 		},
 	})
 
-	// Create a new window with the necessary options.
-	// 'Title' is the title of the window.
-	// 'Mac' options tailor the window when running on macOS.
-	// 'BackgroundColour' is the background colour of the window.
-	// 'URL' is the URL that will be loaded into the webview.
 	app.Window.NewWithOptions(application.WebviewWindowOptions{
-		Title: "Window 1",
+		Name:            popupWindowName,
+		Title:           "Sticker Picker",
+		Width:           popupWidth,
+		Height:          popupHeight,
+		Hidden:          true,
+		DisableResize:   true,
+		Frameless:       true,
+		AlwaysOnTop:     true,
+		HideOnEscape:    true,
+		HideOnFocusLost: true,
 		Mac: application.MacWindow{
-			InvisibleTitleBarHeight: 50,
-			Backdrop:                application.MacBackdropTranslucent,
-			TitleBar:                application.MacTitleBarHiddenInset,
+			Backdrop: application.MacBackdropTranslucent,
+			TitleBar: application.MacTitleBarHidden,
 		},
 		BackgroundColour: application.NewRGB(27, 38, 54),
 		URL:              "/",
 	})
 
-	// Create a goroutine that emits an event containing the current time every second.
-	// The frontend can listen to this event and update the UI accordingly.
-	go func() {
-		for {
-			now := time.Now().Format(time.RFC1123)
-			app.Event.Emit("time", now)
-			time.Sleep(time.Second)
-		}
-	}()
+	tray := app.SystemTray.New()
+	tray.SetLabel("WTW")
+	tray.SetTooltip("wtw-sticker-picker")
+	trayMenu := app.NewMenu()
+	trayMenu.Add("Settings").OnClick(func(_ *application.Context) {
+		showPopupNearCursor(app, popupWindowName)
+	})
+	trayMenu.AddSeparator()
+	trayMenu.Add("Quit").OnClick(func(_ *application.Context) {
+		app.Quit()
+	})
+	tray.SetMenu(trayMenu)
+	tray.OnRightClick(func() {
+		tray.OpenMenu()
+	})
 
-	// Run the application. This blocks until the application has been exited.
 	err := app.Run()
-
-	// If an error occurred while running the application, log it and exit.
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -13,3 +13,10 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 export function Greet(name) {
     return $Call.ByID(1411160069, name);
 }
+
+/**
+ * @returns {$CancellablePromise<void>}
+ */
+export function HidePopup() {
+    return $Call.ByID(2680989126);
+}
