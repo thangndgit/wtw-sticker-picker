@@ -2,7 +2,10 @@ module changeme
 
 go 1.25
 
-require github.com/wailsapp/wails/v3 v3.0.0-alpha.78
+require (
+	github.com/wailsapp/wails/v3 v3.0.0-alpha.78
+	golang.design/x/hotkey v0.4.1
+)
 
 require (
 	dario.cat/mergo v1.0.2 // indirect

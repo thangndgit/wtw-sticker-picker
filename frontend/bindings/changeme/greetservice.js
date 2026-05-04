@@ -6,6 +6,20 @@
 // @ts-ignore: Unused imports
 import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Create } from "@wailsio/runtime";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as $models from "./models.js";
+
+/**
+ * @param {string} packID
+ * @returns {$CancellablePromise<$models.StickerItem[]>}
+ */
+export function GetPackStickers(packID) {
+    return $Call.ByID(1877747217, packID).then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType1($result);
+    }));
+}
+
 /**
  * @param {string} name
  * @returns {$CancellablePromise<string>}
@@ -20,3 +34,18 @@ export function Greet(name) {
 export function HidePopup() {
     return $Call.ByID(2680989126);
 }
+
+/**
+ * @returns {$CancellablePromise<$models.StickerPack[]>}
+ */
+export function ListStickerPacks() {
+    return $Call.ByID(3878999351).then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType3($result);
+    }));
+}
+
+// Private type creation functions
+const $$createType0 = $models.StickerItem.createFrom;
+const $$createType1 = $Create.Array($$createType0);
+const $$createType2 = $models.StickerPack.createFrom;
+const $$createType3 = $Create.Array($$createType2);

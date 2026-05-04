@@ -16,12 +16,12 @@ import (
 var assets embed.FS
 
 func main() {
-	var app *application.App
-	app = application.New(application.Options{
+	app := application.New(application.Options{
 		Name:        "wtw-sticker-picker",
 		Description: "Sticker picker popup utility",
 		Services: []application.Service{
 			application.NewService(&GreetService{}),
+			application.NewService(&GlobalHotkeyService{}),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),
@@ -29,11 +29,6 @@ func main() {
 		Mac: application.MacOptions{
 			ActivationPolicy: application.ActivationPolicyAccessory,
 			ApplicationShouldTerminateAfterLastWindowClosed: false,
-		},
-		KeyBindings: map[string]func(window application.Window){
-			"Cmd+Option+Shift+M": func(_ application.Window) {
-				showPopupNearCursor(app, popupWindowName)
-			},
 		},
 	})
 

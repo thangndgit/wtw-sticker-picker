@@ -6,3 +6,8 @@ import * as GreetService from "./greetservice.js";
 export {
     GreetService
 };
+
+export {
+    StickerItem,
+    StickerPack
+} from "./models.js";

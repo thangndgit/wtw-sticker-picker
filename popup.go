@@ -4,8 +4,8 @@ import "github.com/wailsapp/wails/v3/pkg/application"
 
 const (
 	popupWindowName = "popup"
-	popupWidth      = 420
-	popupHeight     = 280
+	popupWidth      = 380
+	popupHeight     = 480
 	popupMargin     = 8
 )
 
