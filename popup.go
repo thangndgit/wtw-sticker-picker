@@ -14,6 +14,7 @@ func showPopupNearCursor(app *application.App, windowName string) {
 	if !ok {
 		return
 	}
+	capturePasteTarget()
 
 	cursorX, cursorY, hasCursor := currentCursorPosition()
 	if !hasCursor {

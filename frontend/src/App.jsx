@@ -100,10 +100,15 @@ function App() {
     localStorage.setItem(RECENT_KEY, JSON.stringify(items));
   };
 
-  const onStickerClick = (sticker) => {
+  const onStickerClick = async (sticker) => {
     const nextRecent = [sticker, ...recentStickers.filter((s) => s.id !== sticker.id)].slice(0, RECENT_MAX);
     persistRecent(nextRecent);
-    hidePopup();
+    try {
+      await GreetService.PasteSticker(sticker.dataUrl);
+    } catch (err) {
+      console.error(err);
+      hidePopup();
+    }
   };
 
   const onRecentNavWheel = (event) => {

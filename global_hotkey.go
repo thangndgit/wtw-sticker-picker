@@ -11,9 +11,6 @@ import (
 	"golang.design/x/hotkey"
 )
 
-// GlobalShortcutDescription matches the chord below (Ctrl+Alt+S on Windows).
-const GlobalShortcutDescription = "Ctrl + Option + S"
-
 // GlobalHotkeyService registers a system-wide hotkey for the picker popup.
 type GlobalHotkeyService struct {
 	done chan struct{}
@@ -21,7 +18,7 @@ type GlobalHotkeyService struct {
 
 func (s *GlobalHotkeyService) ServiceStartup(ctx context.Context, _ application.ServiceOptions) error {
 	// Registering too early on macOS can crash before the app event loop fully starts.
-	hk := hotkey.New([]hotkey.Modifier{hotkey.ModCtrl, hotkey.ModOption}, hotkey.KeyS)
+	hk := hotkey.New(globalHotkeyModifiers(), hotkey.KeyS)
 
 	s.done = make(chan struct{})
 	go func() {

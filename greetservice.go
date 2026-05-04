@@ -1,8 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"encoding/base64"
 	"fmt"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	"image/png"
 	"io/fs"
 	"path"
 	"path/filepath"
@@ -11,6 +16,8 @@ import (
 	"strings"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
+
+	_ "golang.org/x/image/webp"
 )
 
 type GreetService struct{}
@@ -39,6 +46,22 @@ func (g *GreetService) HidePopup() {
 		return
 	}
 	window.Hide()
+}
+
+func (g *GreetService) PasteSticker(dataURL string) error {
+	pngBytes, err := stickerDataURLToPNG(dataURL)
+	if err != nil {
+		return err
+	}
+	if err := writeStickerImageToClipboard(pngBytes); err != nil {
+		return err
+	}
+	g.HidePopup()
+
+	if err := pasteIntoCapturedTarget(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (g *GreetService) ListStickerPacks() ([]StickerPack, error) {
@@ -168,4 +191,35 @@ func detectStickerMIME(fileName string) string {
 	default:
 		return "image/webp"
 	}
+}
+
+func stickerDataURLToPNG(dataURL string) ([]byte, error) {
+	dataURL = strings.TrimSpace(dataURL)
+	if dataURL == "" {
+		return nil, fmt.Errorf("empty sticker data")
+	}
+	comma := strings.Index(dataURL, ",")
+	if comma <= 0 {
+		return nil, fmt.Errorf("invalid data url")
+	}
+	header := strings.ToLower(dataURL[:comma])
+	if !strings.Contains(header, ";base64") {
+		return nil, fmt.Errorf("unsupported data url encoding")
+	}
+	rawBase64 := dataURL[comma+1:]
+	raw, err := base64.StdEncoding.DecodeString(rawBase64)
+	if err != nil {
+		return nil, fmt.Errorf("decode sticker base64: %w", err)
+	}
+
+	img, _, err := image.Decode(bytes.NewReader(raw))
+	if err != nil {
+		return nil, fmt.Errorf("decode sticker image: %w", err)
+	}
+
+	var out bytes.Buffer
+	if err := png.Encode(&out, img); err != nil {
+		return nil, fmt.Errorf("encode png: %w", err)
+	}
+	return out.Bytes(), nil
 }

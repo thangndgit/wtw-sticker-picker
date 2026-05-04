@@ -44,6 +44,14 @@ export function ListStickerPacks() {
     }));
 }
 
+/**
+ * @param {string} dataURL
+ * @returns {$CancellablePromise<void>}
+ */
+export function PasteSticker(dataURL) {
+    return $Call.ByID(1340843938, dataURL);
+}
+
 // Private type creation functions
 const $$createType0 = $models.StickerItem.createFrom;
 const $$createType1 = $Create.Array($$createType0);
