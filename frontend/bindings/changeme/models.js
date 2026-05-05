@@ -6,6 +6,41 @@
 // @ts-ignore: Unused imports
 import { Create as $Create } from "@wailsio/runtime";
 
+export class AppSettings {
+    /**
+     * Creates a new AppSettings instance.
+     * @param {Partial<AppSettings>} [$$source = {}] - The source object to create the AppSettings.
+     */
+    constructor($$source = {}) {
+        if (!("launchOnStartup" in $$source)) {
+            /**
+             * @member
+             * @type {boolean}
+             */
+            this["launchOnStartup"] = false;
+        }
+        if (!("theme" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["theme"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new AppSettings instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {AppSettings}
+     */
+    static createFrom($$source = {}) {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new AppSettings(/** @type {Partial<AppSettings>} */($$parsedSource));
+    }
+}
+
 export class StickerItem {
     /**
      * Creates a new StickerItem instance.

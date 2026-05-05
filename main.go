@@ -50,13 +50,31 @@ func main() {
 		BackgroundColour: application.NewRGB(27, 38, 54),
 		URL:              "/",
 	})
+	app.Window.NewWithOptions(application.WebviewWindowOptions{
+		Name:            settingsWindowName,
+		Title:           "Settings",
+		Width:           settingsWidth,
+		Height:          settingsHeight,
+		Hidden:          true,
+		DisableResize:   true,
+		Frameless:       true,
+		AlwaysOnTop:     true,
+		HideOnEscape:    true,
+		HideOnFocusLost: false,
+		Mac: application.MacWindow{
+			Backdrop: application.MacBackdropTranslucent,
+			TitleBar: application.MacTitleBarHidden,
+		},
+		BackgroundColour: application.NewRGB(27, 38, 54),
+		URL:              "/?view=settings",
+	})
 
 	tray := app.SystemTray.New()
 	tray.SetLabel("WTW")
 	tray.SetTooltip("wtw-sticker-picker")
 	trayMenu := app.NewMenu()
 	trayMenu.Add("Settings").OnClick(func(_ *application.Context) {
-		showPopupNearCursor(app, popupWindowName)
+		showWindowCentered(app, settingsWindowName, settingsWidth, settingsHeight)
 	})
 	trayMenu.AddSeparator()
 	trayMenu.Add("Quit").OnClick(func(_ *application.Context) {

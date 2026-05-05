@@ -8,6 +8,7 @@ export {
 };
 
 export {
+    AppSettings,
     StickerItem,
     StickerPack
 } from "./models.js";

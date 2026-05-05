@@ -3,10 +3,13 @@ package main
 import "github.com/wailsapp/wails/v3/pkg/application"
 
 const (
-	popupWindowName = "popup"
-	popupWidth      = 380
-	popupHeight     = 480
-	popupMargin     = 8
+	popupWindowName    = "popup"
+	settingsWindowName = "settings"
+	popupWidth         = 380
+	popupHeight        = 480
+	settingsWidth      = 420
+	settingsHeight     = 360
+	popupMargin        = 8
 )
 
 func showPopupNearCursor(app *application.App, windowName string) {
@@ -64,6 +67,21 @@ func showPopupNearCursor(app *application.App, windowName string) {
 	}
 
 	window.SetPosition(targetX, targetY)
+	window.Show()
+	window.Focus()
+}
+
+func showWindowCentered(app *application.App, windowName string, width int, height int) {
+	window, ok := app.Window.GetByName(windowName)
+	if !ok {
+		return
+	}
+	primary := app.Screen.GetPrimary()
+	if primary != nil {
+		targetX := primary.WorkArea.X + (primary.WorkArea.Width-width)/2
+		targetY := primary.WorkArea.Y + (primary.WorkArea.Height-height)/2
+		window.SetPosition(targetX, targetY)
+	}
 	window.Show()
 	window.Focus()
 }

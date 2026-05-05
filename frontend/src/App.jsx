@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Clock3, Plus, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock3, Plus, Moon, Sun, X } from "lucide-react";
 import { GreetService } from "../bindings/changeme";
 
 const RECENT_KEY = "wtw:recent-stickers";
@@ -7,6 +7,8 @@ const RECENT_MAX = 16;
 const INITIAL_RENDER_COUNT = 24;
 const RENDER_BATCH_SIZE = 16;
 const RENDER_BATCH_DELAY_MS = 40;
+const THEME_DARK = "dark";
+const THEME_LIGHT = "light";
 
 const stickerIdentity = (sticker) => {
   if (!sticker || typeof sticker !== "object") return "";
@@ -41,6 +43,10 @@ const dedupeRecentStickers = (items) => {
 };
 
 function App() {
+  const isSettingsView = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("view") === "settings";
+  }, []);
   const [packs, setPacks] = useState([]);
   const [activeNavId, setActiveNavId] = useState("");
   const [stickers, setStickers] = useState([]);
@@ -49,8 +55,13 @@ function App() {
   const [packLoading, setPackLoading] = useState(false);
   const [renderLimit, setRenderLimit] = useState(INITIAL_RENDER_COUNT);
   const [isPasting, setIsPasting] = useState(false);
+  const [settings, setSettings] = useState({ launchOnStartup: false, theme: THEME_DARK });
+  const [pendingSettings, setPendingSettings] = useState({ launchOnStartup: false, theme: THEME_DARK });
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [shellClosing, setShellClosing] = useState(false);
   const navStripRef = useRef(null);
   const packLoadRequestRef = useRef(0);
+  const closeTimerRef = useRef(0);
 
   useEffect(() => {
     const raw = localStorage.getItem(RECENT_KEY);
@@ -74,7 +85,34 @@ function App() {
     return () => window.removeEventListener("resize", syncPopupHeight);
   }, []);
 
+  const refreshSettings = () => {
+    GreetService.GetSettings()
+      .then((nextSettings) => {
+        const normalized = {
+          launchOnStartup: Boolean(nextSettings.launchOnStartup),
+          theme: nextSettings.theme === THEME_LIGHT ? THEME_LIGHT : THEME_DARK,
+        };
+        setSettings(normalized);
+        setPendingSettings(normalized);
+      })
+      .catch((err) => console.error(err));
+  };
+
   useEffect(() => {
+    refreshSettings();
+  }, []);
+
+  useEffect(() => {
+    const sourceTheme = isSettingsView ? pendingSettings.theme : settings.theme;
+    const theme = sourceTheme === THEME_LIGHT ? THEME_LIGHT : THEME_DARK;
+    document.documentElement.dataset.theme = theme;
+  }, [isSettingsView, pendingSettings.theme, settings.theme]);
+
+  useEffect(() => {
+    if (isSettingsView) {
+      setLoading(false);
+      return;
+    }
     GreetService.ListStickerPacks()
       .then((packList) => {
         setPacks(packList);
@@ -84,7 +122,26 @@ function App() {
       })
       .catch((err) => console.error(err))
       .finally(() => setLoading(false));
-  }, []);
+  }, [isSettingsView]);
+
+  useEffect(() => {
+    if (isSettingsView) return;
+    const onFocus = () => {
+      refreshSettings();
+    };
+    window.addEventListener("focus", onFocus);
+    onFocus();
+    return () => window.removeEventListener("focus", onFocus);
+  }, [isSettingsView]);
+
+  useEffect(
+    () => () => {
+      if (closeTimerRef.current) {
+        window.clearTimeout(closeTimerRef.current);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     if (activeNavId !== "recent") return;
@@ -220,6 +277,21 @@ function App() {
     });
   };
 
+  const hideSettings = () => {
+    GreetService.HideSettings().catch((err) => {
+      console.error(err);
+    });
+  };
+
+  const animateAndClose = (closeAction) => {
+    if (shellClosing) return;
+    setShellClosing(true);
+    closeTimerRef.current = window.setTimeout(() => {
+      closeAction();
+      setShellClosing(false);
+    }, 170);
+  };
+
   useEffect(() => {
     if (!navStripRef.current || !activeNavId) return;
     const activeButton = navStripRef.current.querySelector(`[data-nav-id="${CSS.escape(activeNavId)}"]`);
@@ -235,84 +307,195 @@ function App() {
     navStripRef.current.scrollBy({ left: delta, behavior: "auto" });
   };
 
+  const updateSettings = async (nextSettings) => {
+    if (settingsSaving) return;
+    setSettingsSaving(true);
+    try {
+      const updated = await GreetService.UpdateSettings(nextSettings);
+      const normalized = {
+        launchOnStartup: Boolean(updated.launchOnStartup),
+        theme: updated.theme === THEME_LIGHT ? THEME_LIGHT : THEME_DARK,
+      };
+      setSettings(normalized);
+      setPendingSettings(normalized);
+      return true;
+    } catch (err) {
+      console.error(err);
+      return false;
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
+
+  const onToggleLaunchOnStartup = () => {
+    setPendingSettings((current) => ({
+      ...current,
+      launchOnStartup: !current.launchOnStartup,
+    }));
+  };
+
+  const onThemeChange = (theme) => {
+    if (pendingSettings.theme === theme) return;
+    setPendingSettings((current) => ({
+      ...current,
+      theme,
+    }));
+  };
+
+  const onApplySettings = async () => {
+    if (settingsSaving) return;
+    setSettingsSaving(true);
+    try {
+      const updated = await GreetService.ApplySettingsAndShowPopup(pendingSettings);
+      const normalized = {
+        launchOnStartup: Boolean(updated.launchOnStartup),
+        theme: updated.theme === THEME_LIGHT ? THEME_LIGHT : THEME_DARK,
+      };
+      setSettings(normalized);
+      setPendingSettings(normalized);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
+
   return (
-    <div className="popup-shell">
+    <div
+      className={`popup-shell ${isSettingsView ? "settings-mode" : ""} ${shellClosing ? "closing" : ""}`}
+    >
       <div className="popup-header">
-        <div className="popup-title">Sticker Picker</div>
-        <button className="popup-close" onClick={hidePopup} aria-label="Close popup">
+        <div className="popup-title">{isSettingsView ? "Settings" : "Sticker Picker"}</div>
+        <button
+          className="popup-close"
+          onClick={() => animateAndClose(isSettingsView ? hideSettings : hidePopup)}
+          aria-label="Close popup"
+        >
           <X />
         </button>
       </div>
+      {isSettingsView ? (
+        <div className="settings-panel">
+          <div className="settings-section">
+            <div className="settings-row">
+              <div>
+                <div className="settings-label">Open app at startup</div>
+                <div className="settings-desc">Automatically run Sticker Picker when your computer starts.</div>
+              </div>
+              <button
+                className={`switch ${pendingSettings.launchOnStartup ? "on" : ""}`}
+                type="button"
+                disabled={settingsSaving}
+                onClick={onToggleLaunchOnStartup}
+                aria-label="Toggle open app at startup"
+              >
+                <span className="switch-thumb" />
+              </button>
+            </div>
+          </div>
 
-      <div className="popup-grid">
-        {loading || packLoading ? (
-          <div className="empty-state">Loading stickers...</div>
-        ) : stickers.length === 0 ? (
-          <div className="empty-state">No stickers</div>
-        ) : (
-          visibleStickers.map((sticker) => (
-            <button
-              key={sticker.id}
-              className="sticker-cell"
-              type="button"
-              disabled={isPasting}
-              onClick={() => onStickerClick(sticker)}
-              title={sticker.name}
-            >
-              <img src={sticker.dataUrl} alt={sticker.name} loading="lazy" decoding="async" />
-            </button>
-          ))
-        )}
-      </div>
+          <div className="settings-section">
+            <div className="settings-label">Theme</div>
+            <div className="theme-group">
+              <button
+                className={`theme-btn ${pendingSettings.theme === THEME_LIGHT ? "active" : ""}`}
+                type="button"
+                disabled={settingsSaving}
+                onClick={() => onThemeChange(THEME_LIGHT)}
+              >
+                <Sun />
+                <span>Light</span>
+              </button>
+              <button
+                className={`theme-btn ${pendingSettings.theme === THEME_DARK ? "active" : ""}`}
+                type="button"
+                disabled={settingsSaving}
+                onClick={() => onThemeChange(THEME_DARK)}
+              >
+                <Moon />
+                <span>Dark</span>
+              </button>
+            </div>
+          </div>
 
-      <div className="popup-nav">
-        <button
-          className="nav-btn"
-          type="button"
-          onClick={() => setActiveByIndex(activeNavIndex - 1)}
-          disabled={activeNavIndex <= 0}
-          title="Back one pack"
-        >
-          <ChevronLeft />
-        </button>
-
-        <div className="nav-strip" ref={navStripRef} onWheel={onNavStripWheel}>
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              data-nav-id={item.id}
-              type="button"
-              className={`nav-pack ${item.id === activeNavId ? "active" : ""}`}
-              onClick={() => setActiveNavId(item.id)}
-              disabled={isPasting}
-              onWheel={item.id === "recent" ? onRecentNavWheel : undefined}
-              title={item.title}
-            >
-              {item.kind === "recent" ? (
-                <span className="nav-recent-icon" aria-hidden="true">
-                  <Clock3 />
-                </span>
-              ) : (
-                <img src={item.thumbDataUrl} alt={item.title} loading="lazy" decoding="async" />
-              )}
-            </button>
-          ))}
+          <button className="settings-apply-btn" type="button" disabled={settingsSaving} onClick={onApplySettings}>
+            Apply
+          </button>
+          <div className="settings-credit">Powered by Matitmui</div>
         </div>
+      ) : (
+        <div className="popup-grid">
+          {loading || packLoading ? (
+            <div className="empty-state">Loading stickers...</div>
+          ) : stickers.length === 0 ? (
+            <div className="empty-state">No stickers</div>
+          ) : (
+            visibleStickers.map((sticker) => (
+              <button
+                key={sticker.id}
+                className="sticker-cell"
+                type="button"
+                disabled={isPasting}
+                onClick={() => onStickerClick(sticker)}
+                title={sticker.name}
+              >
+                <img src={sticker.dataUrl} alt={sticker.name} loading="lazy" decoding="async" />
+              </button>
+            ))
+          )}
+        </div>
+      )}
 
-        <button
-          className="nav-btn"
-          type="button"
-          onClick={() => setActiveByIndex(activeNavIndex + 1)}
-          disabled={activeNavIndex < 0 || activeNavIndex >= navItems.length - 1}
-          title="Next one pack"
-        >
-          <ChevronRight />
-        </button>
+      {!isSettingsView && (
+        <div className="popup-nav">
+          <button
+            className="nav-btn"
+            type="button"
+            onClick={() => setActiveByIndex(activeNavIndex - 1)}
+            disabled={activeNavIndex <= 0}
+            title="Back one pack"
+          >
+            <ChevronLeft />
+          </button>
 
-        <button className="nav-btn add-btn" type="button" title="Add sticker pack">
-          <Plus />
-        </button>
-      </div>
+          <div className="nav-strip" ref={navStripRef} onWheel={onNavStripWheel}>
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                data-nav-id={item.id}
+                type="button"
+                className={`nav-pack ${item.id === activeNavId ? "active" : ""}`}
+                onClick={() => setActiveNavId(item.id)}
+                disabled={isPasting}
+                onWheel={item.id === "recent" ? onRecentNavWheel : undefined}
+                title={item.title}
+              >
+                {item.kind === "recent" ? (
+                  <span className="nav-recent-icon" aria-hidden="true">
+                    <Clock3 />
+                  </span>
+                ) : (
+                  <img src={item.thumbDataUrl} alt={item.title} loading="lazy" decoding="async" />
+                )}
+              </button>
+            ))}
+          </div>
+
+          <button
+            className="nav-btn"
+            type="button"
+            onClick={() => setActiveByIndex(activeNavIndex + 1)}
+            disabled={activeNavIndex < 0 || activeNavIndex >= navItems.length - 1}
+            title="Next one pack"
+          >
+            <ChevronRight />
+          </button>
+
+          <button className="nav-btn add-btn" type="button" title="Add sticker pack">
+            <Plus />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

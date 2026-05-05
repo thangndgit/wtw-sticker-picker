@@ -34,26 +34,24 @@
   color-scheme: dark;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    --color-text: #1a2540;
-    --color-text-muted: rgba(26, 37, 64, 0.62);
-    --color-surface: rgba(248, 250, 255, 0.98);
-    --color-border: rgba(34, 53, 93, 0.16);
-    --color-divider: rgba(34, 53, 93, 0.12);
-    --color-btn-bg: rgba(34, 53, 93, 0.08);
-    --color-btn-bg-hover: rgba(34, 53, 93, 0.14);
-    --color-icon: #304269;
-    --color-nav-item-bg: rgba(34, 53, 93, 0.07);
-    --color-nav-active: #4f6dff;
-    --color-nav-active-glow: rgba(79, 109, 255, 0.3);
-    --color-recent-bg: radial-gradient(circle at 40% 30%, rgba(79, 109, 255, 0.24), rgba(79, 109, 255, 0.1));
-    --color-sticker-hover: rgba(34, 53, 93, 0.1);
-    --color-scrollbar-track: rgba(34, 53, 93, 0.08);
-    --color-scrollbar-thumb: rgba(79, 109, 255, 0.48);
-    --color-scrollbar-thumb-hover: rgba(79, 109, 255, 0.7);
-    color-scheme: light;
-  }
+:root[data-theme="light"] {
+  --color-text: #1a2540;
+  --color-text-muted: rgba(26, 37, 64, 0.62);
+  --color-surface: rgba(248, 250, 255, 0.98);
+  --color-border: rgba(34, 53, 93, 0.16);
+  --color-divider: rgba(34, 53, 93, 0.12);
+  --color-btn-bg: rgba(34, 53, 93, 0.08);
+  --color-btn-bg-hover: rgba(34, 53, 93, 0.14);
+  --color-icon: #304269;
+  --color-nav-item-bg: rgba(34, 53, 93, 0.07);
+  --color-nav-active: #4f6dff;
+  --color-nav-active-glow: rgba(79, 109, 255, 0.3);
+  --color-recent-bg: radial-gradient(circle at 40% 30%, rgba(79, 109, 255, 0.24), rgba(79, 109, 255, 0.1));
+  --color-sticker-hover: rgba(34, 53, 93, 0.1);
+  --color-scrollbar-track: rgba(34, 53, 93, 0.08);
+  --color-scrollbar-thumb: rgba(79, 109, 255, 0.48);
+  --color-scrollbar-thumb-hover: rgba(79, 109, 255, 0.7);
+  color-scheme: light;
 }
 
 *,
@@ -95,12 +93,21 @@ body,
 .popup-shell {
   width: 100%;
   height: var(--popup-height-real);
+  position: relative;
   border-radius: 12px;
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   overflow: hidden;
   display: grid;
   grid-template-rows: var(--popup-header-height) minmax(0, 1fr) var(--popup-nav-height);
+}
+
+.popup-shell.closing {
+  animation: shell-exit 170ms ease-in forwards;
+}
+
+.popup-shell.settings-mode {
+  grid-template-rows: var(--popup-header-height) minmax(0, 1fr);
 }
 
 .popup-header {
@@ -145,6 +152,17 @@ body,
 
 .popup-close:hover {
   background: var(--color-btn-bg-hover);
+}
+
+@keyframes shell-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(3px) scale(0.995);
+  }
 }
 
 .popup-grid {
@@ -215,6 +233,121 @@ body,
   align-self: center;
   justify-self: center;
   color: var(--color-text-muted);
+}
+
+.settings-panel {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.settings-section {
+  border: 1px solid var(--color-divider);
+  border-radius: 10px;
+  padding: 12px;
+  background: var(--color-nav-item-bg);
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settings-label {
+  font-weight: 600;
+}
+
+.settings-desc {
+  margin-top: 4px;
+  color: var(--color-text-muted);
+  line-height: 1.35;
+  font-size: 12px;
+}
+
+.switch {
+  width: 42px;
+  height: 24px;
+  border-radius: 999px;
+  border: none;
+  background: var(--color-btn-bg);
+  padding: 2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: background-color 0.15s ease;
+}
+
+.switch.on {
+  background: var(--color-nav-active);
+}
+
+.switch-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  transform: translateX(0);
+  transition: transform 0.15s ease;
+}
+
+.switch.on .switch-thumb {
+  transform: translateX(18px);
+}
+
+.theme-group {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+}
+
+.theme-btn {
+  border: none;
+  background: var(--color-btn-bg);
+  color: var(--color-icon);
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.theme-btn.active {
+  outline: 1px solid var(--color-nav-active);
+  box-shadow: 0 0 0 1px var(--color-nav-active-glow) inset;
+}
+
+.theme-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.settings-credit {
+  margin-top: 8px;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.settings-apply-btn {
+  margin-top: auto;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--color-nav-active);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.settings-apply-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .popup-nav {

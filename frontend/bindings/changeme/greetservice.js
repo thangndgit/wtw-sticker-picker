@@ -11,12 +11,38 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 import * as $models from "./models.js";
 
 /**
+ * @param {$models.AppSettings} next
+ * @returns {$CancellablePromise<$models.AppSettings>}
+ */
+export function ApplySettingsAndShowPopup(next) {
+    return $Call.ByID(3199130363, next).then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType0($result);
+    }));
+}
+
+/**
+ * @returns {$CancellablePromise<string>}
+ */
+export function ConsumePopupToast() {
+    return $Call.ByID(734408387);
+}
+
+/**
  * @param {string} packID
  * @returns {$CancellablePromise<$models.StickerItem[]>}
  */
 export function GetPackStickers(packID) {
     return $Call.ByID(1877747217, packID).then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType1($result);
+        return $$createType2($result);
+    }));
+}
+
+/**
+ * @returns {$CancellablePromise<$models.AppSettings>}
+ */
+export function GetSettings() {
+    return $Call.ByID(2238682357).then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType0($result);
     }));
 }
 
@@ -36,11 +62,18 @@ export function HidePopup() {
 }
 
 /**
+ * @returns {$CancellablePromise<void>}
+ */
+export function HideSettings() {
+    return $Call.ByID(50908257);
+}
+
+/**
  * @returns {$CancellablePromise<$models.StickerPack[]>}
  */
 export function ListStickerPacks() {
     return $Call.ByID(3878999351).then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType3($result);
+        return $$createType4($result);
     }));
 }
 
@@ -52,8 +85,19 @@ export function PasteSticker(dataURL) {
     return $Call.ByID(1340843938, dataURL);
 }
 
+/**
+ * @param {$models.AppSettings} next
+ * @returns {$CancellablePromise<$models.AppSettings>}
+ */
+export function UpdateSettings(next) {
+    return $Call.ByID(1386688512, next).then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType0($result);
+    }));
+}
+
 // Private type creation functions
-const $$createType0 = $models.StickerItem.createFrom;
-const $$createType1 = $Create.Array($$createType0);
-const $$createType2 = $models.StickerPack.createFrom;
-const $$createType3 = $Create.Array($$createType2);
+const $$createType0 = $models.AppSettings.createFrom;
+const $$createType1 = $models.StickerItem.createFrom;
+const $$createType2 = $Create.Array($$createType1);
+const $$createType3 = $models.StickerPack.createFrom;
+const $$createType4 = $Create.Array($$createType3);
