@@ -231,3 +231,7 @@ func sendShiftInsertViaKeybdEvent() error {
 	kb.HasSHIFT(true)
 	return kb.Launching()
 }
+
+func pasteRawStickerIntoCapturedTarget(ext string, raw []byte) error {
+	return errors.New("pasting raw sticker files is not supported on windows yet")
+}

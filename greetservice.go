@@ -49,14 +49,33 @@ func (g *GreetService) HidePopup() {
 }
 
 func (g *GreetService) PasteSticker(dataURL string) error {
-	pngBytes, err := stickerDataURLToPNG(dataURL)
+	mimeType, rawBytes, err := decodeStickerDataURL(dataURL)
 	if err != nil {
 		return err
 	}
-	if err := writeStickerImageToClipboard(pngBytes); err != nil {
+	if mimeType == "image/webp" && isAnimatedWebP(rawBytes) {
+		if err := pasteRawStickerIntoCapturedTarget(".webp", rawBytes); err != nil {
+			return err
+		}
+		g.HidePopup()
+		return nil
+	}
+	if mimeType == "image/gif" {
+		if err := pasteRawStickerIntoCapturedTarget(".gif", rawBytes); err != nil {
+			return err
+		}
+		g.HidePopup()
+		return nil
+	}
+
+	pngBytes, err := stickerRawToPNG(rawBytes)
+	if err != nil {
 		return err
 	}
 	g.HidePopup()
+	if err := writeStickerImageToClipboard(pngBytes); err != nil {
+		return err
+	}
 
 	if err := pasteIntoCapturedTarget(); err != nil {
 		return err
@@ -193,25 +212,34 @@ func detectStickerMIME(fileName string) string {
 	}
 }
 
-func stickerDataURLToPNG(dataURL string) ([]byte, error) {
+func decodeStickerDataURL(dataURL string) (string, []byte, error) {
 	dataURL = strings.TrimSpace(dataURL)
 	if dataURL == "" {
-		return nil, fmt.Errorf("empty sticker data")
+		return "", nil, fmt.Errorf("empty sticker data")
 	}
 	comma := strings.Index(dataURL, ",")
 	if comma <= 0 {
-		return nil, fmt.Errorf("invalid data url")
+		return "", nil, fmt.Errorf("invalid data url")
 	}
 	header := strings.ToLower(dataURL[:comma])
 	if !strings.Contains(header, ";base64") {
-		return nil, fmt.Errorf("unsupported data url encoding")
+		return "", nil, fmt.Errorf("unsupported data url encoding")
 	}
 	rawBase64 := dataURL[comma+1:]
 	raw, err := base64.StdEncoding.DecodeString(rawBase64)
 	if err != nil {
-		return nil, fmt.Errorf("decode sticker base64: %w", err)
+		return "", nil, fmt.Errorf("decode sticker base64: %w", err)
 	}
+	mimeType := "application/octet-stream"
+	if strings.HasPrefix(header, "data:") {
+		if semi := strings.Index(header[5:], ";"); semi >= 0 {
+			mimeType = header[5 : 5+semi]
+		}
+	}
+	return mimeType, raw, nil
+}
 
+func stickerRawToPNG(raw []byte) ([]byte, error) {
 	img, _, err := image.Decode(bytes.NewReader(raw))
 	if err != nil {
 		return nil, fmt.Errorf("decode sticker image: %w", err)
@@ -222,4 +250,15 @@ func stickerDataURLToPNG(dataURL string) ([]byte, error) {
 		return nil, fmt.Errorf("encode png: %w", err)
 	}
 	return out.Bytes(), nil
+}
+
+func isAnimatedWebP(raw []byte) bool {
+	if len(raw) < 16 {
+		return false
+	}
+	if string(raw[:4]) != "RIFF" || string(raw[8:12]) != "WEBP" {
+		return false
+	}
+	// Animated WebP always contains an ANIM or ANMF chunk.
+	return bytes.Contains(raw, []byte("ANIM")) || bytes.Contains(raw, []byte("ANMF"))
 }
